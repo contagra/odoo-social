@@ -23,8 +23,7 @@ class IrMailServer(models.Model):
         help="Allowed Domains list separated by commas. If there is not given"
         " SMTP server it will let us to search the proper mail server to be"
         " used to sent the messages where the message 'From' email domain"
-        " match with the domain whitelist."
-    )
+        " match with the domain whitelist.")
 
     @api.constrains("domain_whitelist")
     def check_valid_domain_whitelist(self):
@@ -45,7 +44,7 @@ class IrMailServer(models.Model):
         if self.smtp_from:
             match = re.match(
                 r"^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\."
-                r"[a-z]{2,4})$",
+                r"[a-z]{2,6})$",
                 self.smtp_from,
             )
             if match is None:
@@ -63,14 +62,18 @@ class IrMailServer(models.Model):
 
     @api.model
     def _get_domain_whitelist(self, domain_whitelist_string):
-        res = domain_whitelist_string.split(",") if domain_whitelist_string else []
+        res = domain_whitelist_string.split(
+            ",") if domain_whitelist_string else []
         res = [item.strip() for item in res]
         return res
 
     @api.model
-    def send_email(
-        self, message, mail_server_id=None, smtp_server=None, *args, **kwargs
-    ):
+    def send_email(self,
+                   message,
+                   mail_server_id=None,
+                   smtp_server=None,
+                   *args,
+                   **kwargs):
         # Get email_from and name_from
         if message["From"].count("<") > 1:
             split_from = message["From"].rsplit(" <", 1)
@@ -98,12 +101,12 @@ class IrMailServer(models.Model):
         domain_whitelist = self._get_domain_whitelist(domain_whitelist)
 
         # Replace the From only if needed
-        if smtp_from and (not domain_whitelist or email_domain not in domain_whitelist):
+        if smtp_from and (not domain_whitelist or
+                          email_domain not in domain_whitelist):
             email_from = formataddr((name_from, smtp_from))
             message.replace_header("From", email_from)
-            bounce_alias = (
-                self.env["ir.config_parameter"].sudo().get_param("mail.bounce.alias")
-            )
+            bounce_alias = (self.env["ir.config_parameter"].sudo().get_param(
+                "mail.bounce.alias"))
             if not bounce_alias:
                 # then, bounce handling is disabled and we want
                 # Return-Path = From
@@ -112,24 +115,24 @@ class IrMailServer(models.Model):
                 else:
                     message.add_header("Return-Path", email_from)
 
-        return super(IrMailServer, self).send_email(
-            message, mail_server_id, smtp_server, *args, **kwargs
-        )
+        return super(IrMailServer,
+                     self).send_email(message, mail_server_id, smtp_server,
+                                      *args, **kwargs)
 
     @tools.ormcache("email_domain")
     def _get_mail_sever(self, email_domain):
         """return the mail server id that match with the domain_whitelist
         If not match then return the default mail server id available one"""
         mail_server_id = None
-        for item in self.sudo().search(
-            [("domain_whitelist", "!=", False)], order="sequence"
-        ):
+        for item in self.sudo().search([("domain_whitelist", "!=", False)],
+                                       order="sequence"):
             domain_whitelist = self._get_domain_whitelist(item.domain_whitelist)
             if email_domain in domain_whitelist:
                 mail_server_id = item.id
                 break
         if not mail_server_id:
-            mail_server_id = self.sudo().search([], order="sequence", limit=1).id
+            mail_server_id = self.sudo().search([], order="sequence",
+                                                limit=1).id
         return mail_server_id
 
     @api.model

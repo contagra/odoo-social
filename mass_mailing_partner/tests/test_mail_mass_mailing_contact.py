@@ -15,7 +15,7 @@ class MailMassMailingContactCase(base.BaseCase):
         contact = self.create_mailing_contact(
             {"email": "partner@test.com", "list_ids": [(6, 0, self.mailing_list.ids)]}
         )
-        post_init_hook(self.cr)
+        post_init_hook(self.env)
         self.assertEqual(contact.partner_id.id, self.partner.id)
         self.check_mailing_contact_partner(contact)
 
@@ -66,9 +66,7 @@ class MailMassMailingContactCase(base.BaseCase):
             self.create_mailing_contact(
                 {
                     "email": "partner2@test.com",
-                    "subscription_ids": [
-                        (0, 0, {"list_id": self.mailing_list2.id})
-                    ],
+                    "subscription_ids": [(0, 0, {"list_id": self.mailing_list2.id})],
                 }
             )
 
